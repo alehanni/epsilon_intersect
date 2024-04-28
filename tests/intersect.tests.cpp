@@ -91,4 +91,39 @@ TEST_CASE("dist_to_line_sq_gg2_basic") {
 
 TEST_CASE("dist_to_line_sq_gg2_random_double_100") {
     
+    using Catch::Generators::RandomFloatingGenerator;
+    using Catch::Approx;
+
+    // generate 100 seeds
+    int seed = GENERATE(take(100, random(0, 10000)));
+
+    RandomFloatingGenerator<double> rng(-100.0, 100.0, seed);
+    RandomFloatingGenerator<double> rng2(0.0, 1.0, seed);
+    RandomFloatingGenerator<double> rng3(-1.0, 0.0, seed);
+
+    // build point an line so that the nearest point is known
+    double nx, ny, px, py, q1x, q1y, q2x, q2y, s1, s2;
+
+    nx = rng.get(); rng.next();
+    ny = rng.get(); rng.next();
+
+    px = rng.get(); rng.next();
+    py = rng.get(); rng.next();
+
+    // orthogonal to n -> p with positive scalar
+    s1 = rng2.get(); rng2.next();
+    q1x = nx + (py - ny) * s1;
+    q1y = ny - (px - nx) * s1;
+
+    // orthogonal to n -> p with negative scalar
+    s2 = rng3.get(); rng3.next();
+    q2x = nx + (py - ny) * s2;
+    q2y = ny - (px - nx) * s2;
+
+    // compute distance
+    double d_sq_true, d_sq_comp;
+    d_sq_true = (nx - px) * (nx - px) + (ny - py) * (ny - py);
+    d_sq_comp = dist_to_line_sq_gg2(px, py, q1x, q1y, q2x, q2y);
+
+    REQUIRE(d_sq_comp == Approx(d_sq_true));
 }
