@@ -29,6 +29,26 @@ TEST_CASE("line_intersect_gg3_basic") {
     REQUIRE( tdet == 48 );
 }
 
+TEST_CASE("line_intersect_gg3_parallel_lines") {
+
+    int32_t ax, ay, bx, by, cx, cy, dx, dy;
+
+    ax = -5;
+    ay = 0;
+    bx = 5;
+    by = 4;
+
+    cx = -5;
+    cy = 1;
+    dx = 5;
+    dy = 5;
+
+    int32_t det, sdet, tdet;
+    line_intersect_gg3<int32_t>(ax, ay, bx, by, cx, cy, dx, dy, det, sdet, tdet);
+
+    INFO( "det: " << det << " sdet: " << sdet << " tdet: " << tdet);
+}
+
 TEST_CASE("line_intersect_gg3_random_double_100") {
 
     using Catch::Generators::RandomFloatingGenerator;

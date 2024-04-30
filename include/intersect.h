@@ -23,8 +23,8 @@ void line_intersect_gg3(T p1x, T p1y, T p2x, T p2y, T q1x, T q1y, T q2x, T q2y, 
     // T d = line_q(p2x, p2y);
 
     det = a - b;
-    sdet = a;
-    tdet = -c;
+    sdet = a; // sdet/det == s parametrizes intersection point on q
+    tdet = -c; // tdet/det == t parametrizes intersection point on p
 }
 
 template<class T>
@@ -62,6 +62,11 @@ T dist_to_line_sq_gg2(T px, T py, T ax, T ay, T bx, T by) {
     }
 
     return d2_sq;
+}
+
+template<class T>
+bool aabb_intersect(T ax, T ay, T bx, T by, T cx, T cy, T dx, T dy) {
+    return false;
 }
 
 #endif
