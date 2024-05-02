@@ -7,7 +7,7 @@
 // small demo of robust line-line intersections
 
 bool epsilon_intersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2, float &det, float &sdet, float &tdet) {
-    constexpr float eps = 0.5;
+    constexpr float eps = 1.0;
     
     // todo: pre-check using bounding boxes
 
@@ -46,7 +46,8 @@ constexpr Vector2 segments[] = {
 constexpr size_t n_segments = sizeof(segments) / sizeof(Vector2);
 
 Vector2 p_prev = {320, 240};
-Vector2 p_desired = {320, 240};
+// Vector2 p_desired = {320, 240};
+Vector2 v_velocity = {0, 0};
 
 bool epsilon_intersect_vs_all(Vector2 p1, Vector2 p2, Vector2 &q1, Vector2 &q2, float &det, float &sdet, float &tdet) {
     // get nearest intersection when comparing against all segments
@@ -103,6 +104,8 @@ void collision_step(Vector2 from, Vector2 to, Vector2 &out_pos, Vector2 &out_vel
         line_intersect_gg3(to.x, to.y, to2.x, to2.y, q1.x, q1.y, q2.x, q2.y, det2, sdet2, tdet2);
         assert(abs(det2) > 1e-6 && "orthogonal can't be parallel");
         s2 = sdet2 / det2;
+        s2 = (s < 0.0) ? 0.0 : s2;
+        s2 = (s > 1.0) ? 1.0 : s2;
 
         Vector2 qi2;
         qi2.x = q1.x + (q2.x - q1.x) * s2;
@@ -122,15 +125,19 @@ void collision_step(Vector2 from, Vector2 to, Vector2 &out_pos, Vector2 &out_vel
 void update_draw_frame() {
     
     auto mpos = GetMousePosition();
-    p_desired.x = 0.9 * p_desired.x + 0.1 * mpos.x; // hit 'em with the low-pass
-    p_desired.y = 0.9 * p_desired.y + 0.1 * mpos.y;
-    float dt = 1.0;
+    Vector2 new_velocity = {
+        mpos.x - p_prev.x,
+        mpos.y - p_prev.y
+    };
+    v_velocity.x = 0.8 * v_velocity.x + 0.2 * new_velocity.x; // hit 'em with the low-pass
+    v_velocity.y = 0.8 * v_velocity.y + 0.2 * new_velocity.y;
+    float dt = 1.0 / 60.0;
 
     for(size_t timeout = 0; dt > 0.0 && timeout < 5; timeout++) {
         Vector2 out_pos, out_vel;
-        collision_step(p_prev, p_desired, out_pos, out_vel, dt);
+        collision_step(p_prev, Vector2Add(p_prev, v_velocity), out_pos, out_vel, dt);
         p_prev = out_pos;
-        p_desired = Vector2Add(out_pos, Vector2Scale(out_vel, dt));
+        v_velocity = Vector2Scale(out_vel, dt);
     }
     
     // draw line between desired and corrected position
