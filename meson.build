@@ -1,5 +1,5 @@
 
-project('web_game', 'cpp', default_options : ['cpp_std=c++17'])
+project('epsilon_intersect', 'cpp', default_options : ['cpp_std=c++17'])
 
 cpp = meson.get_compiler('cpp')
 
