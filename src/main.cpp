@@ -4,8 +4,11 @@
 #include "raymath.h"
 #include "intersect.h"
 
-// small demo of robust line-line intersections
+#include <cmath>
+#include <cstdint>
+#include <cassert>
 
+// small demo of robust line-line intersections
 bool epsilon_intersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2, float &det, float &sdet, float &tdet) {
     constexpr float eps = 1.0;
     
@@ -139,12 +142,32 @@ void update_draw_frame() {
         p_prev = out_pos;
         v_velocity = Vector2Scale(out_vel, dt);
     }
+
+    // ray march from center to cursor
+    static std::vector<sdf_func> sdf_funcs;
+    static bool first_flag = true;
+    if (first_flag) {
+        // look away this is cursed
+        size_t seg_max = sizeof(segments) / sizeof(Vector2);
+        double radius = 10.0;
+        for (size_t i=0; i<seg_max - 1; i++)
+            sdf_funcs.push_back([radius, i](vec2 p){return std::sqrt(dist_to_line_sq_gg2<double>
+                (p.x, p.y, segments[i].x, segments[i].y, segments[i+1].x, segments[i+1].y)) - radius;});
+        sdf_funcs.push_back([radius, seg_max](vec2 p){return std::sqrt(dist_to_line_sq_gg2<double>
+            (p.x, p.y, segments[seg_max].x, segments[seg_max].y, segments[0].x, segments[0].y)) - radius;});
+        first_flag = false;
+    }
     
+    // but this is neat
+    vec2 ray_result = ray_march({320, 240}, {mpos.x, mpos.y}, sdf_funcs.begin(), sdf_funcs.end());
+
     // draw line between desired and corrected position
     BeginDrawing();
     ClearBackground(DARKGRAY);
     DrawCircleV(p_prev, 2.0, PINK);
     DrawLineV(p_prev, mpos, RED);
+    DrawLine(320, 240, ray_result.x, ray_result.y, LIME); // ray march
+    DrawCircle(ray_result.x, ray_result.y, 10.0, LIME);   // ray march
     DrawLineStrip((Vector2 *)segments, n_segments, WHITE);
     EndDrawing();
 }
