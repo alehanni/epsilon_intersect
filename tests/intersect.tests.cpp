@@ -9,20 +9,21 @@
 
 TEST_CASE("line_intersect_gg3_basic") {
 
-    int32_t ax, ay, bx, by, cx, cy, dx, dy;
+    //int32_t ax, ay, bx, by, cx, cy, dx, dy;
+    point<int32_t> a, b, c, d;
 
-    ax = -5;
-    ay = 0;
-    bx = 5;
-    by = 0;
+    a.x = -5;
+    a.y = 0;
+    b.x = 5;
+    b.y = 0;
 
-    cx = 1;
-    cy = -4;
-    dx = 1;
-    dy = 4;
+    c.x = 1;
+    c.y = -4;
+    d.x = 1;
+    d.y = 4;
 
     int32_t det, sdet, tdet;
-    line_intersect_gg3<int32_t>(ax, ay, bx, by, cx, cy, dx, dy, det, sdet, tdet);
+    line_intersect_gg3<int32_t>(a, b, c, d, det, sdet, tdet);
 
     REQUIRE( det == 80 );
     REQUIRE( sdet == 40 );
@@ -31,20 +32,21 @@ TEST_CASE("line_intersect_gg3_basic") {
 
 TEST_CASE("line_intersect_gg3_parallel_lines") {
 
-    int32_t ax, ay, bx, by, cx, cy, dx, dy;
+    //int32_t ax, ay, bx, by, cx, cy, dx, dy;
+    point<int32_t> a, b, c, d;
 
-    ax = -5;
-    ay = 0;
-    bx = 5;
-    by = 4;
+    a.x = -5;
+    a.y = 0;
+    b.x = 5;
+    b.y = 4;
 
-    cx = -5;
-    cy = 1;
-    dx = 5;
-    dy = 5;
+    c.x = -5;
+    c.y = 1;
+    d.x = 5;
+    d.y = 5;
 
     int32_t det, sdet, tdet;
-    line_intersect_gg3<int32_t>(ax, ay, bx, by, cx, cy, dx, dy, det, sdet, tdet);
+    line_intersect_gg3<int32_t>(a, b, c, d, det, sdet, tdet);
 
     INFO( "det: " << det << " sdet: " << sdet << " tdet: " << tdet);
 }
@@ -61,29 +63,30 @@ TEST_CASE("line_intersect_gg3_random_double_100") {
     RandomFloatingGenerator<double> rng3(-1.0, 0.0, seed);
 
     // guarantee intersection by building line segments from intersection point
-    double ix, iy, p1x, p1y, p2x, p2y, q1x, q1y, q2x, q2y;
+    double ix, iy;//, p1x, p1y, p2x, p2y, q1x, q1y, q2x, q2y;
+    point<double> p1, p2, q1, q2;
 
     ix = rng2.get(); rng2.next();
     iy = rng2.get(); rng2.next();
 
-    p1x = rng2.get(); rng2.next();
-    p1y = rng2.get(); rng2.next();
+    p1.x = rng2.get(); rng2.next();
+    p1.y = rng2.get(); rng2.next();
     double s1 = rng3.get(); rng3.next();
-    p2x = ix + (p1x - ix) * s1;
-    p2y = iy + (p1y - iy) * s1;
+    p2.x = ix + (p1.x - ix) * s1;
+    p2.y = iy + (p1.y - iy) * s1;
 
-    q1x = rng2.get(); rng2.next();
-    q1y = rng2.get(); rng2.next();
+    q1.x = rng2.get(); rng2.next();
+    q1.y = rng2.get(); rng2.next();
     double s2 = rng3.get(); rng3.next();
-    q2x = ix + (q1x - ix) * s2;
-    q2y = iy + (q1y - iy) * s2;
+    q2.x = ix + (q1.x - ix) * s2;
+    q2.y = iy + (q1.y - iy) * s2;
 
     // compute intersection
     double det, sdet, tdet, t, rx, ry;
-    line_intersect_gg3<double>(p1x, p1y, p2x, p2y, q1x, q1y, q2x, q2y, det, sdet, tdet);
+    line_intersect_gg3<double>(p1, p2, q1, q2, det, sdet, tdet);
     t = tdet / det;
-    rx = p1x + (p2x - p1x) * t;
-    ry = p1y + (p2y - p1y) * t;
+    rx = p1.x + (p2.x - p1.x) * t;
+    ry = p1.y + (p2.y - p1.y) * t;
 
     INFO("Intersect at x: " << rx << " y: " << ry);
     INFO("True value x: " << ix << " y: " << iy);
@@ -92,24 +95,25 @@ TEST_CASE("line_intersect_gg3_random_double_100") {
     REQUIRE(ry == Approx(iy));
 }
 
-TEST_CASE("dist_to_line_sq_gg2_basic") {
+TEST_CASE("dist_to_seg_sq_gg2_basic") {
 
-    int32_t px, py, ax, ay, bx, by;
+    //int32_t px, py, ax, ay, bx, by;
+    point<int32_t> p, a, b;
 
-    px = 0;
-    py = 5;
+    p.x = 0;
+    p.y = 5;
 
-    ax = -3;
-    ay = 1;
-    bx = 3;
-    by = 1;
+    a.x = -3;
+    a.y = 1;
+    b.x = 3;
+    b.y = 1;
 
-    auto d = dist_to_line_sq_gg2<int32_t>(px, py, ax, ay, bx, by);
+    auto d = dist_to_seg_sq_gg2<int32_t>(p, a, b);
 
     REQUIRE( d == 16 );
 }
 
-TEST_CASE("dist_to_line_sq_gg2_random_double_100") {
+TEST_CASE("dist_to_seg_sq_gg2_random_double_100") {
     
     using Catch::Generators::RandomFloatingGenerator;
     using Catch::Approx;
@@ -122,28 +126,29 @@ TEST_CASE("dist_to_line_sq_gg2_random_double_100") {
     RandomFloatingGenerator<double> rng3(-1.0, 0.0, seed);
 
     // build point an line so that the nearest point is known
-    double nx, ny, px, py, q1x, q1y, q2x, q2y, s1, s2;
+    double nx, ny, s1, s2;//, px, py, q1x, q1y, q2x, q2y, s1, s2;
+    point<double> p, q1, q2;
 
     nx = rng.get(); rng.next();
     ny = rng.get(); rng.next();
 
-    px = rng.get(); rng.next();
-    py = rng.get(); rng.next();
+    p.x = rng.get(); rng.next();
+    p.y = rng.get(); rng.next();
 
     // orthogonal to n -> p with positive scalar
     s1 = rng2.get(); rng2.next();
-    q1x = nx + (py - ny) * s1;
-    q1y = ny - (px - nx) * s1;
+    q1.x = nx + (p.y - ny) * s1;
+    q1.y = ny - (p.x - nx) * s1;
 
     // orthogonal to n -> p with negative scalar
     s2 = rng3.get(); rng3.next();
-    q2x = nx + (py - ny) * s2;
-    q2y = ny - (px - nx) * s2;
+    q2.x = nx + (p.y - ny) * s2;
+    q2.y = ny - (p.x - nx) * s2;
 
     // compute distance
     double d_sq_true, d_sq_comp;
-    d_sq_true = (nx - px) * (nx - px) + (ny - py) * (ny - py);
-    d_sq_comp = dist_to_line_sq_gg2(px, py, q1x, q1y, q2x, q2y);
+    d_sq_true = (nx - p.x) * (nx - p.x) + (ny - p.y) * (ny - p.y);
+    d_sq_comp = dist_to_seg_sq_gg2<double>(p, q1, q2);
 
     REQUIRE(d_sq_comp == Approx(d_sq_true));
 }

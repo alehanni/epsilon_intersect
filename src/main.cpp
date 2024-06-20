@@ -1,46 +1,36 @@
-#include <cassert>
 
 #include "raylib.h"
 #include "raymath.h"
 #include "intersect.h"
-
-#include <cmath>
-#include <cstdint>
-#include <cassert>
-
-// small demo of robust line-line intersections
-bool epsilon_intersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2, float &det, float &sdet, float &tdet) {
-    constexpr float eps = 1.0;
-    
-    // todo: pre-check using bounding boxes
-
-    // get intersection point on line q
-    float s, qix, qiy;
-    line_intersect_gg3<float>(p1.x, p1.y, p2.x, p2.y, q1.x, q1.y, q2.x, q2.y, det, sdet, tdet);
-
-    if (det < 1e-6)
-        return {}; // parallel lines
-
-    s = sdet / det;
-    s = (s < 0.0) ? 0.0 : s;
-    s = (s > 1.0) ? 1.0 : s;
-    qix = q1.x + (q2.x - q1.x) * s;
-    qiy = q1.y + (q2.y - q1.y) * s;
-
-    // check if intersection point is within line p's tolerance
-    double d_sq;
-    d_sq = dist_to_line_sq_gg2(qix, qiy, p1.x, p1.y, p2.x, p2.y);
-
-    return (d_sq <= eps * eps);
-}
 
 constexpr Vector2 segments[] = {
     {100.0, 100.0},
     {300.0, 120.0},
     {400.0, 100.0},
     {500.0, 100.0},
+    {500.0, 200.0},
     {600.0, 300.0},
     {500.0, 400.0},
+
+    // spikes
+    {390.0, 400.0},
+    {380.0, 380.0},
+    {370.0, 400.0},
+    {360.0, 380.0},
+    {350.0, 400.0},
+    {340.0, 380.0},
+    {330.0, 400.0},
+    //{320.0, 380.0},
+    {310.0, 400.0},
+    {300.0, 380.0},
+    {290.0, 400.0},
+    {280.0, 380.0},
+    {270.0, 400.0},
+    {260.0, 380.0},
+    {250.0, 400.0},
+    {240.0, 380.0},
+    {230.0, 400.0},
+
     {200.0, 400.0},
     {100.0, 300.0},
     {100.0, 100.0}
@@ -48,126 +38,45 @@ constexpr Vector2 segments[] = {
 
 constexpr size_t n_segments = sizeof(segments) / sizeof(Vector2);
 
-Vector2 p_prev = {320, 240};
-// Vector2 p_desired = {320, 240};
-Vector2 v_velocity = {0, 0};
-
-bool epsilon_intersect_vs_all(Vector2 p1, Vector2 p2, Vector2 &q1, Vector2 &q2, float &det, float &sdet, float &tdet) {
-    // get nearest intersection when comparing against all segments
-    bool intersect_atleast_once = false;
-
-    det = sdet = tdet = 1.0; // note: intersection will be smaller than s = t = 1.0
-    float _det, _sdet, _tdet;
-
-    for (size_t i=1; i<n_segments; i++) {
-        auto _q1 = segments[i - 1];
-        auto _q2 = segments[i];
-
-        if (epsilon_intersect(p1, p2, _q1, _q2, _det, _sdet, _tdet)) {
-            if (_tdet * det < tdet * _det) {
-                intersect_atleast_once = true;
-                q1 = _q1;
-                q2 = _q2;
-                sdet = _sdet;
-                tdet = _tdet;
-                det = _det;
-            }
-        }
-    }
-
-    return intersect_atleast_once;
-}
-
-Vector2 get_ortho(Vector2 in) {
-    Vector2 out;
-    out.x = -in.y;
-    out.y = in.x;
-    return out;
-}
-
-void collision_step(Vector2 from, Vector2 to, Vector2 &out_pos, Vector2 &out_vel, float &dt) {
-    constexpr float dt_eps = 1e-4;
-    // velocity = (target_pos - in_pos) / dt => target_pos = velocity * dt + in_pos
-
-    float det, sdet, tdet;
-    Vector2 q1, q2;
-    if (epsilon_intersect_vs_all(from, to, q1, q2, det, sdet, tdet)) {
-        float s, t; // note: t is just the parameter name, not time
-        s = sdet / det;
-        t = tdet / det;
-        dt -= (t > 0.0) ? t * dt : dt_eps; // t is the fraction of dt elapsed until the collision occured
-
-        Vector2 qi1;
-        qi1.x = q1.x + (q2.x - q1.x) * s;
-        qi1.y = q1.y + (q2.y - q1.y) * s;
-
-        Vector2 ortho = get_ortho(Vector2Subtract(q2, q1));
-        Vector2 to2 = Vector2Add(to, ortho);
-        float det2, sdet2, tdet2, s2;
-        line_intersect_gg3(to.x, to.y, to2.x, to2.y, q1.x, q1.y, q2.x, q2.y, det2, sdet2, tdet2);
-        assert(abs(det2) > 1e-6 && "orthogonal can't be parallel");
-        s2 = sdet2 / det2;
-        s2 = (s < 0.0) ? 0.0 : s2;
-        s2 = (s > 1.0) ? 1.0 : s2;
-
-        Vector2 qi2;
-        qi2.x = q1.x + (q2.x - q1.x) * s2;
-        qi2.y = q1.y + (q2.y - q1.y) * s2;
-
-        out_pos = qi1;
-        out_vel.x = (qi2.x - qi1.x) / dt; // note: dt is smaller now
-        out_vel.y = (qi2.y - qi1.y) / dt;
-    } else {
-        out_pos = to;
-        out_vel.x = (to.x - from.x) / dt;
-        out_vel.y = (to.y - from.y) / dt;
-        dt = 0.0;        
-    }
-}
-
 void update_draw_frame() {
     
     auto mpos = GetMousePosition();
-    Vector2 new_velocity = {
-        mpos.x - p_prev.x,
-        mpos.y - p_prev.y
-    };
-    v_velocity.x = 0.8 * v_velocity.x + 0.2 * new_velocity.x; // hit 'em with the low-pass
-    v_velocity.y = 0.8 * v_velocity.y + 0.2 * new_velocity.y;
-    float dt = 1.0 / 60.0;
 
-    for(size_t timeout = 0; dt > 0.0 && timeout < 5; timeout++) {
-        Vector2 out_pos, out_vel;
-        collision_step(p_prev, Vector2Add(p_prev, v_velocity), out_pos, out_vel, dt);
-        p_prev = out_pos;
-        v_velocity = Vector2Scale(out_vel, dt);
+    // do a boxcast against edges
+    float det, tdet, _det, _tdet;
+    det = tdet = 1.0; // note: intersection will be smaller than s = t = 1.0
+
+    Vector2 middle = {320.f, 240.f};
+    aabb<float> my_box = {-6.f, -12.f, 6.f, 12.f};
+
+    for (size_t i=1; i<n_segments; i++) {
+        auto q1 = segments[i - 1];
+        auto q2 = segments[i];
+        boxcast<float>(middle, mpos, q1, q2, my_box, _det, _tdet);
+
+        float t = tdet / det;
+        float _t = _tdet / _det;
+        if (0.0 <= _t && _t < t){
+            tdet = _tdet;
+            det = _det;
+        }
     }
 
-    // ray march from center to cursor
-    static std::vector<sdf_func> sdf_funcs;
-    static bool first_flag = true;
-    if (first_flag) {
-        // look away this is cursed
-        size_t seg_max = sizeof(segments) / sizeof(Vector2);
-        double radius = 10.0;
-        for (size_t i=0; i<seg_max - 1; i++)
-            sdf_funcs.push_back([radius, i](vec2 p){return std::sqrt(dist_to_line_sq_gg2<double>
-                (p.x, p.y, segments[i].x, segments[i].y, segments[i+1].x, segments[i+1].y)) - radius;});
-        sdf_funcs.push_back([radius, seg_max](vec2 p){return std::sqrt(dist_to_line_sq_gg2<double>
-            (p.x, p.y, segments[seg_max].x, segments[seg_max].y, segments[0].x, segments[0].y)) - radius;});
-        first_flag = false;
+    float t, target_x, target_y;
+    t = tdet / det;
+    if (0.0 <= t && t <= 1.0) {
+        target_x = 320.f + (mpos.x - 320.0f) * t;
+        target_y = 240.f + (mpos.y - 240.0f) * t;
+    } else {
+        target_x = mpos.x;
+        target_y = mpos.y;
     }
-    
-    // but this is neat
-    vec2 ray_result = ray_march({320, 240}, {mpos.x, mpos.y}, sdf_funcs.begin(), sdf_funcs.end());
 
     // draw line between desired and corrected position
     BeginDrawing();
     ClearBackground(DARKGRAY);
-    DrawCircleV(p_prev, 2.0, PINK);
-    DrawLineV(p_prev, mpos, RED);
-    DrawLine(320, 240, ray_result.x, ray_result.y, LIME); // ray march
-    DrawCircle(ray_result.x, ray_result.y, 10.0, LIME);   // ray march
+    DrawLine(320, 240, target_x, target_y, RED);
+    DrawRectangleLines(target_x + my_box.xmin, target_y + my_box.ymin, my_box.xmax - my_box.xmin, my_box.ymax - my_box.ymin, RED);
     DrawLineStrip((Vector2 *)segments, n_segments, WHITE);
     EndDrawing();
 }
